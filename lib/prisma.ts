@@ -1,20 +1,14 @@
 import { PrismaClient } from "@prisma/client";
-import { PrismaLibSql } from "@prisma/adapter-libsql";
-import { resolve } from "path";
+import { PrismaNeon } from "@prisma/adapter-neon";
 
 const globalForPrisma = globalThis as unknown as { prisma: PrismaClient };
 
-function makeDbUrl(raw: string): string {
-  if (raw.startsWith("file:./") || raw.startsWith("file:../")) {
-    return "file:" + resolve(process.cwd(), raw.slice(5));
-  }
-  return raw;
-}
-
 function createPrisma() {
-  const rawUrl = process.env.DATABASE_URL || "file:./prisma/dev.db";
-  const url = makeDbUrl(rawUrl);
-  const adapter = new PrismaLibSql({ url });
+  const connectionString =
+    process.env.POSTGRES_PRISMA_URL ||
+    process.env.DATABASE_URL ||
+    "";
+  const adapter = new PrismaNeon({ connectionString });
   return new PrismaClient({ adapter } as ConstructorParameters<typeof PrismaClient>[0]);
 }
 
