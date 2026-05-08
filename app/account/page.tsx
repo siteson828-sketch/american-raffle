@@ -21,9 +21,9 @@ export default async function AccountPage() {
 
   if (!user) redirect("/login");
 
-  const activeTickets = user.tickets.filter((t) => t.raffle.status === "active");
-  const pastTickets = user.tickets.filter((t) => t.raffle.status !== "active");
-  const freeTickets = user.tickets.filter((t) => t.isFree);
+  const activeTickets = user.tickets.filter((t: (typeof user.tickets)[number]) => t.raffle.status === "active");
+  const pastTickets = user.tickets.filter((t: (typeof user.tickets)[number]) => t.raffle.status !== "active");
+  const freeTickets = user.tickets.filter((t: (typeof user.tickets)[number]) => t.isFree);
 
   const referralUrl = `${process.env.NEXTAUTH_URL}/register?ref=${user.referralCode}`;
 
