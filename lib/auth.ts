@@ -28,6 +28,7 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
           name: user.name,
           role: user.role,
           mustChangePassword: user.mustChangePassword,
+          referralCode: user.referralCode,
         };
       },
     }),
@@ -38,6 +39,7 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
         token.id = user.id;
         token.role = (user as { role?: string }).role;
         token.mustChangePassword = (user as { mustChangePassword?: boolean }).mustChangePassword ?? false;
+        token.referralCode = (user as { referralCode?: string }).referralCode;
       }
       return token;
     },
@@ -46,6 +48,7 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
         session.user.id = token.id as string;
         (session.user as { role?: string }).role = token.role as string;
         (session.user as { mustChangePassword?: boolean }).mustChangePassword = token.mustChangePassword as boolean;
+        (session.user as { referralCode?: string }).referralCode = token.referralCode as string;
       }
       return session;
     },

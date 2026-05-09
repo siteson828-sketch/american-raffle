@@ -1,13 +1,24 @@
 import { auth } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import { redirect } from "next/navigation";
+import { headers } from "next/headers";
 import Link from "next/link";
 import ShareReferralPanel from "@/components/ShareReferralPanel";
 import SmsOptInPanel from "@/components/SmsOptInPanel";
 
-export default async function AccountPage() {
+interface Props {
+  searchParams: Promise<{ success?: string }>;
+}
+
+export default async function AccountPage({ searchParams }: Props) {
+  const { success } = await searchParams;
   const session = await auth();
   if (!session?.user?.id) redirect("/login?redirect=/account");
+
+  const headersList = await headers();
+  const host = headersList.get("host") ?? "";
+  const proto = headersList.get("x-forwarded-proto") ?? "https";
+  const baseUrl = host ? `${proto}://${host}` : (process.env.NEXTAUTH_URL ?? "http://localhost:3000");
 
   const [user, activeRaffle] = await Promise.all([
     prisma.user.findUnique({
@@ -26,11 +37,20 @@ export default async function AccountPage() {
   const pastTickets = user.tickets.filter((t: (typeof user.tickets)[number]) => t.raffle.status !== "active");
   const freeTickets = user.tickets.filter((t: (typeof user.tickets)[number]) => t.isFree);
 
-  const referralUrl = `${process.env.NEXTAUTH_URL}/register?ref=${user.referralCode}`;
+  const referralUrl = `${baseUrl}/register?ref=${user.referralCode}`;
   const raffleName = activeRaffle ? `${activeRaffle.carYear} ${activeRaffle.carMake} ${activeRaffle.carModel}` : undefined;
 
   return (
     <div className="max-w-5xl mx-auto px-4 py-10">
+      {success === "1" && (
+        <div className="bg-green-50 border border-green-300 rounded-xl p-4 mb-6 flex items-start gap-3">
+          <span className="text-2xl">🎉</span>
+          <div>
+            <p className="font-black text-green-800">Payment confirmed — your tickets are in!</p>
+            <p className="text-green-700 text-sm mt-0.5">Check your email for confirmation. Good luck in the drawing!</p>
+          </div>
+        </div>
+      )}
       {/* Header */}
       <div className="flex items-center justify-between mb-8">
         <div>
