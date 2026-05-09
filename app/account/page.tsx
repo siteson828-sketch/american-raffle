@@ -3,6 +3,7 @@ import { prisma } from "@/lib/prisma";
 import { redirect } from "next/navigation";
 import Link from "next/link";
 import ShareReferralPanel from "@/components/ShareReferralPanel";
+import SmsOptInPanel from "@/components/SmsOptInPanel";
 
 export default async function AccountPage() {
   const session = await auth();
@@ -74,6 +75,9 @@ export default async function AccountPage() {
           compact
         />
       </div>
+
+      {/* SMS Opt-in */}
+      <SmsOptInPanel currentPhone={user.phone} currentOptIn={user.smsOptIn} />
 
       {/* Active Tickets */}
       <div className="mb-10">

@@ -3,6 +3,7 @@ import { prisma } from "@/lib/prisma";
 import { redirect } from "next/navigation";
 import Link from "next/link";
 import AdminRaffleActions from "@/components/AdminRaffleActions";
+import AdminSmsDashboard from "@/components/AdminSmsDashboard";
 
 export default async function AdminPage() {
   const session = await auth();
@@ -201,6 +202,9 @@ export default async function AdminPage() {
           </table>
         </div>
       </div>
+
+      {/* SMS Dashboard */}
+      <AdminSmsDashboard />
 
       {/* Drawing History */}
       <div className="bg-white rounded-2xl shadow-md p-6 mt-10">

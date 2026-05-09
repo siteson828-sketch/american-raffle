@@ -4,7 +4,7 @@ import { sendWelcomeEmail } from "@/lib/email";
 import bcrypt from "bcryptjs";
 
 export async function POST(req: NextRequest) {
-  const { name, email, password, referralCode } = await req.json();
+  const { name, email, password, referralCode, phone, smsOptIn } = await req.json();
 
   if (!email || !password || !name) {
     return NextResponse.json({ error: "Name, email, and password are required." }, { status: 400 });
@@ -24,11 +24,17 @@ export async function POST(req: NextRequest) {
     if (referrer) referredById = referrer.id;
   }
 
-  const trialEndsAt = new Date(Date.now() + 14 * 24 * 60 * 60 * 1000); // 14-day trial
+  const trialEndsAt = new Date(Date.now() + 14 * 24 * 60 * 60 * 1000);
+  const optInNow = Boolean(smsOptIn) && Boolean(phone?.trim());
 
   const hashed = await bcrypt.hash(password, 12);
   const user = await prisma.user.create({
-    data: { name, email, password: hashed, referredById, trialEndsAt },
+    data: {
+      name, email, password: hashed, referredById, trialEndsAt,
+      phone: phone?.trim() || null,
+      smsOptIn: optInNow,
+      smsOptInAt: optInNow ? new Date() : null,
+    },
   });
 
   // Fire-and-forget — don't let email failure block signup

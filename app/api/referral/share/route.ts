@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { auth } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
+import { sendSms } from "@/lib/sms";
 
 export async function POST(req: NextRequest) {
   const session = await auth();
@@ -17,21 +18,25 @@ export async function POST(req: NextRequest) {
     data: { userId: session.user.id, raffleId, method },
   });
 
-  // Desktop SMS via Twilio — only when phone provided and env vars present
-  if (method === "sms_twilio" && phone && process.env.TWILIO_ACCOUNT_SID && process.env.TWILIO_AUTH_TOKEN && process.env.TWILIO_PHONE_NUMBER) {
+  if (method === "sms_twilio" && phone) {
     const user = await prisma.user.findUnique({ where: { id: session.user.id } });
     const raffle = await prisma.raffle.findUnique({ where: { id: raffleId } });
+
     if (user && raffle) {
       const referralUrl = `${process.env.NEXTAUTH_URL}/register?ref=${user.referralCode}`;
       const carName = `${raffle.carYear} ${raffle.carMake} ${raffle.carModel}`;
-      const message = `I just entered to win a ${carName}! Enter here and we BOTH get a free ticket: ${referralUrl}`;
-      try {
-        const twilio = (await import("twilio")).default;
-        const client = twilio(process.env.TWILIO_ACCOUNT_SID, process.env.TWILIO_AUTH_TOKEN);
-        await client.messages.create({ body: message, from: process.env.TWILIO_PHONE_NUMBER, to: phone });
-      } catch (err) {
-        console.error("Twilio SMS failed:", err);
-        return NextResponse.json({ ok: true, smsError: "SMS failed to send" });
+      const body = `I just entered to win a ${carName}! Enter here and we both get bonus tickets: ${referralUrl}`;
+
+      const result = await sendSms({
+        to: phone,
+        userId: undefined, // recipient hasn't opted in yet — this is a peer-share, not a platform message
+        body,
+        type: "referral_share",
+        raffleId,
+      });
+
+      if (!result.ok) {
+        return NextResponse.json({ ok: true, smsError: result.error });
       }
     }
   }

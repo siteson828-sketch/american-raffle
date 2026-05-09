@@ -3,6 +3,7 @@ import { prisma } from "@/lib/prisma";
 import { redirect } from "next/navigation";
 import EditRaffleForm from "@/components/EditRaffleForm";
 import ReferralConfigPanel from "@/components/ReferralConfigPanel";
+import DealerSmsConfigPanel from "@/components/DealerSmsConfigPanel";
 
 interface Props {
   params: Promise<{ id: string }>;
@@ -25,6 +26,7 @@ export default async function EditRafflePage({ params }: Props) {
       </h1>
       <EditRaffleForm raffle={raffle} />
       <ReferralConfigPanel raffleId={raffle.id} />
+      <DealerSmsConfigPanel raffleId={raffle.id} />
     </div>
   );
 }

@@ -8,7 +8,7 @@ function RegisterForm() {
   const router = useRouter();
   const params = useSearchParams();
   const refCode = params.get("ref") || "";
-  const [form, setForm] = useState({ name: "", email: "", password: "", confirm: "", ref: refCode });
+  const [form, setForm] = useState({ name: "", email: "", password: "", confirm: "", ref: refCode, phone: "", smsOptIn: false });
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
 
@@ -31,7 +31,7 @@ function RegisterForm() {
     const res = await fetch("/api/register", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ name: form.name, email: form.email, password: form.password, referralCode: form.ref }),
+      body: JSON.stringify({ name: form.name, email: form.email, password: form.password, referralCode: form.ref, phone: form.phone, smsOptIn: form.smsOptIn }),
     });
     const data = await res.json();
     if (!res.ok) {
@@ -92,6 +92,33 @@ function RegisterForm() {
           placeholder="Repeat password"
         />
       </div>
+      {/* Optional phone + SMS consent */}
+      <div className="border border-gray-200 rounded-lg p-4 bg-gray-50 space-y-3">
+        <p className="text-xs font-bold text-gray-500 uppercase tracking-wide">SMS Alerts (Optional)</p>
+        <div>
+          <label className="block text-sm font-bold text-gray-700 mb-1">Mobile Phone</label>
+          <input
+            type="tel"
+            value={form.phone}
+            onChange={(e) => update("phone", e.target.value)}
+            className="w-full border border-gray-300 rounded-lg px-4 py-2 text-sm focus:outline-none focus:border-blue-500"
+            placeholder="+1 (555) 000-0000"
+          />
+        </div>
+        <label className="flex items-start gap-2 cursor-pointer">
+          <input
+            type="checkbox"
+            checked={form.smsOptIn}
+            onChange={(e) => setForm((f) => ({ ...f, smsOptIn: e.target.checked }))}
+            className="mt-0.5 w-4 h-4 accent-red-600 flex-shrink-0"
+          />
+          <span className="text-xs text-gray-600">
+            I consent to receive SMS messages from American Raffle. Msg &amp; data rates may apply.
+            Reply <strong>STOP</strong> to cancel anytime. Consent is not required to purchase.
+          </span>
+        </label>
+      </div>
+
       {refCode && (
         <div className="bg-green-50 border border-green-200 rounded-lg p-3 text-sm text-green-800">
           🎁 You were referred! Complete registration to claim your free bonus ticket.

@@ -19,6 +19,10 @@ model User {
   referredById       String?
   referredBy         User?     @relation("Referrals", fields: [referredById], references: [id])
   referrals          User[]    @relation("Referrals")
+  phone              String?
+  smsOptIn           Boolean   @default(false)
+  smsOptInAt         DateTime?
+  smsOptOutAt        DateTime?
   createdAt          DateTime  @default(now())
   updatedAt          DateTime  @updatedAt
 
@@ -27,6 +31,30 @@ model User {
   accounts           Account[]
   sessions           Session[]
   referralShares     ReferralShare[]
+  smsLogs            SmsLog[]
+}
+
+model SmsLog {
+  id               String   @id @default(cuid())
+  recipientHash    String
+  userId           String?
+  user             User?    @relation(fields: [userId], references: [id])
+  type             String
+  status           String   @default("queued")
+  twilioMessageSid String?
+  errorCode        String?
+  cost             Float?
+  raffleId         String?
+  sentAt           DateTime @default(now())
+}
+
+model DealerSmsConfig {
+  id            String  @id @default(cuid())
+  raffleId      String  @unique
+  raffle        Raffle  @relation(fields: [raffleId], references: [id])
+  accountSidEnc String?
+  authTokenEnc  String?
+  fromNumber    String?
 }
 
 model Account {
@@ -92,6 +120,7 @@ model Raffle {
   drawingLog            DrawingLog?
   referralConfig        ReferralConfig?
   referralShares        ReferralShare[]
+  dealerSmsConfig       DealerSmsConfig?
 }
 
 model ReferralConfig {
