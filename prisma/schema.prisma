@@ -7,24 +7,24 @@ datasource db {
 }
 
 model User {
-  id            String    @id @default(cuid())
-  email         String    @unique
-  name          String?
-  password      String?
-  image         String?
+  id                 String    @id @default(cuid())
+  email              String    @unique
+  name               String?
+  password           String?
+  image              String?
   role               String    @default("user")
   mustChangePassword Boolean   @default(false)
   referralCode       String    @unique @default(cuid())
-  referredById  String?
-  referredBy    User?     @relation("Referrals", fields: [referredById], references: [id])
-  referrals     User[]    @relation("Referrals")
-  createdAt     DateTime  @default(now())
-  updatedAt     DateTime  @updatedAt
+  referredById       String?
+  referredBy         User?     @relation("Referrals", fields: [referredById], references: [id])
+  referrals          User[]    @relation("Referrals")
+  createdAt          DateTime  @default(now())
+  updatedAt          DateTime  @updatedAt
 
-  tickets       Ticket[]
-  orders        Order[]
-  accounts      Account[]
-  sessions      Session[]
+  tickets            Ticket[]
+  orders             Order[]
+  accounts           Account[]
+  sessions           Session[]
 }
 
 model Account {
@@ -62,30 +62,49 @@ model VerificationToken {
 }
 
 model Raffle {
-  id              String   @id @default(cuid())
-  title           String
-  description     String
-  carMake         String
-  carModel        String
-  carYear         Int
-  carColor        String
-  carMsrp         Float
-  photos          String
-  totalTickets    Int
-  soldTickets     Int      @default(0)
-  ticketPrice     Float    @default(10.0)
-  taxCovered      Boolean  @default(true)
-  dealerName      String?
-  dealerCity      String?
-  dealerState     String?
-  status          String   @default("active")
-  drawDate        DateTime?
-  winnerId        String?
-  createdAt       DateTime @default(now())
-  updatedAt       DateTime @updatedAt
+  id                    String      @id @default(cuid())
+  title                 String
+  description           String
+  carMake               String
+  carModel              String
+  carYear               Int
+  carColor              String
+  carMsrp               Float
+  photos                String
+  totalTickets          Int
+  soldTickets           Int         @default(0)
+  ticketPrice           Float       @default(10.0)
+  taxCovered            Boolean     @default(true)
+  dealerName            String?
+  dealerCity            String?
+  dealerState           String?
+  dealerStripeAccountId String?
+  status                String      @default("active")
+  drawDate              DateTime?
+  winnerId              String?
+  createdAt             DateTime    @default(now())
+  updatedAt             DateTime    @updatedAt
 
-  tickets         Ticket[]
-  orders          Order[]
+  tickets               Ticket[]
+  orders                Order[]
+  drawingLog            DrawingLog?
+}
+
+model DrawingLog {
+  id               String   @id @default(cuid())
+  raffleId         String   @unique
+  raffle           Raffle   @relation(fields: [raffleId], references: [id])
+  winnerUserId     String?
+  winnerTicketNum  Int
+  totalEntries     Int
+  randomSeed       String
+  method           String   @default("crypto_random")
+  drawnAt          DateTime @default(now())
+  drawnByUserId    String
+  verificationHash String
+  payoutTriggered  Boolean  @default(false)
+  payoutAmount     Float?
+  stripeTransferId String?
 }
 
 model Ticket {
