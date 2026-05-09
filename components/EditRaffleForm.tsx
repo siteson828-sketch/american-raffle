@@ -1,6 +1,6 @@
 "use client";
 import { useRouter } from "next/navigation";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 
 interface Raffle {
   id: string;
@@ -18,6 +18,7 @@ interface Raffle {
   dealerName: string | null;
   dealerCity: string | null;
   dealerState: string | null;
+  dealerStripeAccountId: string | null;
   status: string;
 }
 
@@ -30,6 +31,15 @@ export default function EditRaffleForm({ raffle }: { raffle: Raffle }) {
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState("");
   const [success, setSuccess] = useState("");
+  const [connectStatus, setConnectStatus] = useState<{ connected: boolean; detailsSubmitted: boolean } | null>(null);
+  const [connectLoading, setConnectLoading] = useState(false);
+
+  useEffect(() => {
+    fetch(`/api/admin/stripe-connect?raffleId=${raffle.id}`)
+      .then((r) => r.json())
+      .then((d) => setConnectStatus(d))
+      .catch(() => {});
+  }, [raffle.id]);
 
   function update(field: string, value: string | number | boolean) {
     setForm((f) => ({ ...f, [field]: value }));
@@ -56,6 +66,21 @@ export default function EditRaffleForm({ raffle }: { raffle: Raffle }) {
     }
     setSaving(false);
     router.refresh();
+  }
+
+  async function handleStripeConnect() {
+    setConnectLoading(true);
+    try {
+      const res = await fetch("/api/admin/stripe-connect", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ raffleId: raffle.id }),
+      });
+      const data = await res.json();
+      if (data.url) window.location.href = data.url;
+    } finally {
+      setConnectLoading(false);
+    }
   }
 
   return (
@@ -88,6 +113,7 @@ export default function EditRaffleForm({ raffle }: { raffle: Raffle }) {
           </div>
         ))}
       </div>
+
       <div>
         <label className="block text-sm font-bold text-gray-700 mb-1">Description</label>
         <textarea
@@ -97,6 +123,7 @@ export default function EditRaffleForm({ raffle }: { raffle: Raffle }) {
           className="w-full border border-gray-300 rounded-lg px-4 py-2 focus:outline-none focus:border-blue-400"
         />
       </div>
+
       <div>
         <label className="block text-sm font-bold text-gray-700 mb-1">Photo URLs (one per line)</label>
         <textarea
@@ -106,6 +133,7 @@ export default function EditRaffleForm({ raffle }: { raffle: Raffle }) {
           className="w-full border border-gray-300 rounded-lg px-4 py-2 font-mono text-sm focus:outline-none focus:border-blue-400"
         />
       </div>
+
       <div className="flex items-center gap-3">
         <input
           type="checkbox"
@@ -118,6 +146,41 @@ export default function EditRaffleForm({ raffle }: { raffle: Raffle }) {
           Taxes & fees covered
         </label>
       </div>
+
+      {/* Stripe Connect */}
+      <div className="border-t pt-6">
+        <h3 className="font-black text-base mb-3" style={{ color: "#3C3B6E" }}>💳 Dealer Stripe Connect Payout</h3>
+        <p className="text-sm text-gray-500 mb-4">
+          Connect a Stripe account for the dealer so they receive 90% of net proceeds automatically when the winner is drawn.
+        </p>
+        {connectStatus?.connected ? (
+          <div className="flex items-center gap-3 bg-green-50 border border-green-200 rounded-xl px-4 py-3">
+            <span className="text-2xl">✅</span>
+            <div>
+              <p className="font-bold text-green-700 text-sm">Stripe account connected & active</p>
+              <p className="text-green-600 text-xs font-mono">{raffle.dealerStripeAccountId}</p>
+            </div>
+          </div>
+        ) : connectStatus?.detailsSubmitted ? (
+          <div className="flex items-center gap-3 bg-yellow-50 border border-yellow-200 rounded-xl px-4 py-3">
+            <span className="text-2xl">⏳</span>
+            <div>
+              <p className="font-bold text-yellow-700 text-sm">Onboarding submitted — awaiting Stripe verification</p>
+            </div>
+          </div>
+        ) : (
+          <button
+            type="button"
+            onClick={handleStripeConnect}
+            disabled={connectLoading}
+            className="px-6 py-3 rounded-xl text-white font-bold text-sm disabled:opacity-50"
+            style={{ background: "#635bff" }}
+          >
+            {connectLoading ? "Redirecting…" : "🔗 Connect Dealer Stripe Account"}
+          </button>
+        )}
+      </div>
+
       <div className="flex gap-4">
         <button
           type="submit"
