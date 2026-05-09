@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
+import { sendWelcomeEmail } from "@/lib/email";
 import bcrypt from "bcryptjs";
 
 export async function POST(req: NextRequest) {
@@ -23,12 +24,15 @@ export async function POST(req: NextRequest) {
     if (referrer) referredById = referrer.id;
   }
 
+  const trialEndsAt = new Date(Date.now() + 14 * 24 * 60 * 60 * 1000); // 14-day trial
+
   const hashed = await bcrypt.hash(password, 12);
   const user = await prisma.user.create({
-    data: { name, email, password: hashed, referredById },
+    data: { name, email, password: hashed, referredById, trialEndsAt },
   });
 
-  // If referred, grant free ticket to both when they buy their first ticket (handled at checkout)
+  // Fire-and-forget — don't let email failure block signup
+  sendWelcomeEmail(user.email!, user.name ?? "there", user.referralCode).catch(console.error);
 
   return NextResponse.json({ success: true, userId: user.id }, { status: 201 });
 }
