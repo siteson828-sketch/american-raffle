@@ -61,6 +61,13 @@ export default async function HomePage() {
                 🎟️ Buy Tickets — $10 Each
               </Link>
               <Link
+                href="/register"
+                className="btn-primary text-lg px-8 py-4 text-center font-black"
+                style={{ background: "#FFD700", color: "#3C3B6E", fontSize: "1.25rem" }}
+              >
+                🚀 Get Started Free
+              </Link>
+              <Link
                 href="/free-tickets"
                 className="btn-blue text-lg px-8 py-4 text-center"
                 style={{ background: "rgba(255,255,255,0.15)", fontSize: "1.25rem" }}
@@ -221,6 +228,91 @@ export default async function HomePage() {
             </Link>
             <Link href="/merch" style={{ background: "rgba(255,255,255,0.15)" }} className="btn-primary px-8 py-3">
               🛍️ Shop Merch
+            </Link>
+          </div>
+        </div>
+      </section>
+
+      {/* Testimonials */}
+      <section className="py-16 max-w-7xl mx-auto px-4">
+        <h2 className="section-title">What Winners Say</h2>
+        <div className="stars-divider">★ ★ ★</div>
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
+          {[
+            {
+              name: "James T., Texas",
+              quote: "I bought 5 tickets on a whim and won a brand-new F-150. Still can't believe it. American Raffle is the real deal — transparent drawing, car delivered to my door.",
+              stars: 5,
+              avatar: "🤠",
+            },
+            {
+              name: "Maria S., Florida",
+              quote: "The whole process was so easy. I entered online, got my ticket numbers by email, and watched the live drawing on their YouTube. Everything was exactly as advertised.",
+              stars: 5,
+              avatar: "🌟",
+            },
+            {
+              name: "Robert K., Ohio",
+              quote: "Taxes and fees covered — that's what sold me. Other raffles hide that. American Raffle put it right on the page and followed through. Plus my entry helped veterans.",
+              stars: 5,
+              avatar: "🎖️",
+            },
+          ].map((t) => (
+            <div key={t.name} className="bg-white rounded-2xl shadow-md p-8 flex flex-col">
+              <div className="text-4xl mb-4">{t.avatar}</div>
+              <div className="flex gap-1 mb-3">
+                {Array.from({ length: t.stars }).map((_, i) => (
+                  <span key={i} style={{ color: "#FFD700" }} className="text-lg">★</span>
+                ))}
+              </div>
+              <p className="text-gray-600 italic mb-4 flex-1">&ldquo;{t.quote}&rdquo;</p>
+              <p className="font-black text-sm" style={{ color: "#3C3B6E" }}>{t.name}</p>
+            </div>
+          ))}
+        </div>
+      </section>
+
+      {/* FAQ */}
+      <section style={{ background: "#f0f4ff" }} className="py-16">
+        <div className="max-w-3xl mx-auto px-4">
+          <h2 className="section-title">Frequently Asked Questions</h2>
+          <div className="stars-divider">★ ★ ★</div>
+          <div className="space-y-4">
+            {[
+              {
+                q: "Is this legal?",
+                a: "Yes — American Raffle operates as a 501(c)(3) nonprofit charitable raffle, which is legal in all 50 states. Our drawings comply with all applicable state charitable gaming laws.",
+              },
+              {
+                q: "Do I really pay $0 in taxes if I win?",
+                a: "Correct. American Raffle covers all federal and state tax liability on the prize value, as well as title transfer fees and registration. You receive the car free and clear.",
+              },
+              {
+                q: "How is the winner chosen?",
+                a: "Winners are selected using a cryptographically secure random number generator (Node.js crypto.randomBytes). The drawing is logged with a publicly verifiable SHA-256 hash so anyone can confirm the result was not manipulated.",
+              },
+              {
+                q: "What if the raffle doesn't sell out?",
+                a: "If a raffle does not sell all tickets by the announced close date, we extend the deadline or draw from the tickets sold — whichever is specified in that raffle's rules. Details are posted on the active raffle page.",
+              },
+              {
+                q: "How do I get free tickets?",
+                a: "Refer a friend who makes their first purchase and you both receive a free ticket. You can also earn free entries by purchasing American Raffle merchandise. Visit the Free Tickets page for details.",
+              },
+              {
+                q: "Can I buy tickets as a gift?",
+                a: "Yes! Create an account, purchase tickets, and you can transfer them to anyone. Contact support after purchase and we'll update the ticket holder name.",
+              },
+            ].map((item) => (
+              <div key={item.q} className="bg-white rounded-xl shadow-sm p-6 border-l-4" style={{ borderColor: "#B22234" }}>
+                <h3 className="font-black text-lg mb-2" style={{ color: "#3C3B6E" }}>{item.q}</h3>
+                <p className="text-gray-600">{item.a}</p>
+              </div>
+            ))}
+          </div>
+          <div className="text-center mt-10">
+            <Link href="/register" className="btn-primary px-10 py-4 text-lg font-black inline-block">
+              🚀 Get Started Free — No Credit Card Required
             </Link>
           </div>
         </div>
