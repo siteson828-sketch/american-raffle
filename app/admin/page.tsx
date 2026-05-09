@@ -9,7 +9,7 @@ export default async function AdminPage() {
   if (!session?.user?.id) redirect("/login");
   if ((session.user as { role?: string }).role !== "admin") redirect("/");
 
-  const [raffles, users, orders, recentOrders] = await Promise.all([
+  const [raffles, users, orders, recentOrders, drawingLogs] = await Promise.all([
     prisma.raffle.findMany({ orderBy: { createdAt: "desc" } }),
     prisma.user.count(),
     prisma.order.count({ where: { status: "paid" } }),
@@ -18,6 +18,10 @@ export default async function AdminPage() {
       include: { user: true, raffle: true },
       orderBy: { createdAt: "desc" },
       take: 10,
+    }),
+    prisma.drawingLog.findMany({
+      include: { raffle: true },
+      orderBy: { drawnAt: "desc" },
     }),
   ]);
 
@@ -196,6 +200,59 @@ export default async function AdminPage() {
             </tbody>
           </table>
         </div>
+      </div>
+
+      {/* Drawing History */}
+      <div className="bg-white rounded-2xl shadow-md p-6 mt-10">
+        <h2 className="text-xl font-black mb-4" style={{ color: "#3C3B6E" }}>🎲 Drawing Audit Log</h2>
+        {drawingLogs.length === 0 ? (
+          <p className="text-gray-400 text-sm py-4 text-center">No drawings conducted yet.</p>
+        ) : (
+          <div className="overflow-x-auto">
+            <table className="w-full text-sm">
+              <thead className="bg-gray-50">
+                <tr>
+                  <th className="text-left px-4 py-3">Raffle</th>
+                  <th className="text-left px-4 py-3">Drawn At</th>
+                  <th className="text-left px-4 py-3">Winner Ticket</th>
+                  <th className="text-left px-4 py-3">Entries</th>
+                  <th className="text-left px-4 py-3">Payout</th>
+                  <th className="text-left px-4 py-3">Verify</th>
+                </tr>
+              </thead>
+              <tbody>
+                {drawingLogs.map((log: (typeof drawingLogs)[number], i: number) => (
+                  <tr key={log.id} className={i % 2 === 0 ? "bg-white" : "bg-gray-50"}>
+                    <td className="px-4 py-3 font-bold">{log.raffle.title}</td>
+                    <td className="px-4 py-3 text-gray-500">{new Date(log.drawnAt).toLocaleString()}</td>
+                    <td className="px-4 py-3 font-mono font-bold" style={{ color: "#B22234" }}>
+                      #{log.winnerTicketNum.toString().padStart(6, "0")}
+                    </td>
+                    <td className="px-4 py-3">{log.totalEntries.toLocaleString()}</td>
+                    <td className="px-4 py-3">
+                      {log.payoutTriggered ? (
+                        <span className="text-green-700 font-bold">
+                          ${log.payoutAmount?.toLocaleString("en-US", { minimumFractionDigits: 2 })}
+                        </span>
+                      ) : (
+                        <span className="text-gray-400 text-xs">—</span>
+                      )}
+                    </td>
+                    <td className="px-4 py-3">
+                      <Link
+                        href={`/verify/${log.raffleId}`}
+                        className="text-blue-600 hover:underline text-xs font-mono"
+                        target="_blank"
+                      >
+                        {log.verificationHash.slice(0, 12)}…
+                      </Link>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        )}
       </div>
     </div>
   );
