@@ -1,20 +1,26 @@
-import { auth } from "@/lib/auth";
-import { NextResponse } from "next/server";
+import { getToken } from "next-auth/jwt";
+import { NextRequest, NextResponse } from "next/server";
 
-export default auth((req) => {
-  const { nextUrl, auth: session } = req as typeof req & { auth: { user?: { mustChangePassword?: boolean } } | null };
+export async function middleware(req: NextRequest) {
+  const { pathname } = req.nextUrl;
 
-  const isChangePassword = nextUrl.pathname === "/change-password";
-  const isAuth = nextUrl.pathname.startsWith("/api/auth") || nextUrl.pathname.startsWith("/api/change-password");
+  // Never intercept these paths
+  if (
+    pathname === "/change-password" ||
+    pathname.startsWith("/api/auth") ||
+    pathname.startsWith("/api/change-password")
+  ) {
+    return NextResponse.next();
+  }
 
-  if (isChangePassword || isAuth) return NextResponse.next();
+  const token = await getToken({ req, secret: process.env.NEXTAUTH_SECRET });
 
-  if (session?.user?.mustChangePassword) {
-    return NextResponse.redirect(new URL("/change-password", nextUrl));
+  if (token?.mustChangePassword) {
+    return NextResponse.redirect(new URL("/change-password", req.url));
   }
 
   return NextResponse.next();
-});
+}
 
 export const config = {
   matcher: ["/((?!_next/static|_next/image|favicon.ico|.*\\.(?:svg|png|jpg|jpeg|gif|webp)$).*)"],
