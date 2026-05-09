@@ -91,7 +91,7 @@ export default async function AccountPage() {
                 </tr>
               </thead>
               <tbody>
-                {activeTickets.map((ticket: (typeof user.tickets)[number], i) => (
+                {activeTickets.map((ticket: (typeof user.tickets)[number], i: number) => (
                   <tr key={ticket.id} className={i % 2 === 0 ? "bg-gray-50" : "bg-white"}>
                     <td className="px-4 py-3 font-bold" style={{ color: "#B22234" }}>
                       #{ticket.ticketNum.toString().padStart(6, "0")}
@@ -135,7 +135,7 @@ export default async function AccountPage() {
                 </tr>
               </thead>
               <tbody>
-                {pastTickets.slice(0, 10).map((ticket: (typeof user.tickets)[number], i) => (
+                {pastTickets.slice(0, 10).map((ticket: (typeof user.tickets)[number], i: number) => (
                   <tr key={ticket.id} className={i % 2 === 0 ? "bg-gray-50" : "bg-white"}>
                     <td className="px-4 py-3 font-bold text-gray-500">
                       #{ticket.ticketNum.toString().padStart(6, "0")}
