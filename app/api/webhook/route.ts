@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { stripe } from "@/lib/stripe";
 import { prisma } from "@/lib/prisma";
+import { sendPaymentConfirmation } from "@/lib/email";
 
 export async function POST(req: NextRequest) {
   const body = await req.text();
@@ -45,63 +46,43 @@ export async function POST(req: NextRequest) {
       data: { soldTickets: { increment: qty } },
     });
 
-    // Handle referral bonus — check if this is their first purchase
+    // Send payment confirmation email (fire-and-forget)
     const user = await prisma.user.findUnique({ where: { id: userId }, include: { orders: true } });
+    if (user?.email) {
+      const ticketNums = Array.from({ length: qty }, (_, i) => startNum + i);
+      const order = await prisma.order.findUnique({ where: { id: orderId } });
+      sendPaymentConfirmation(
+        user.email,
+        user.name ?? "there",
+        qty,
+        order?.amount ?? qty * raffle.ticketPrice,
+        `${raffle.carYear} ${raffle.carMake} ${raffle.carModel}`,
+        ticketNums
+      ).catch(console.error);
+    }
+
+    // Handle referral bonus — check if this is their first purchase
     const isFirstPurchase = user?.orders.filter((o: (typeof user.orders)[number]) => o.status === "paid").length === 1;
 
     if (isFirstPurchase && user?.referredById) {
-      // Grant free ticket to referrer
       const refRaffle = await prisma.raffle.findFirst({ where: { status: "active" } });
       if (refRaffle) {
         const nextNum = refRaffle.soldTickets + qty + 1;
-        // Create free order for referrer
         const freeOrder = await prisma.order.create({
-          data: {
-            userId: user.referredById,
-            raffleId: refRaffle.id,
-            quantity: 1,
-            amount: 0,
-            status: "paid",
-          },
+          data: { userId: user.referredById, raffleId: refRaffle.id, quantity: 1, amount: 0, status: "paid" },
         });
         await prisma.ticket.create({
-          data: {
-            ticketNum: nextNum,
-            raffleId: refRaffle.id,
-            userId: user.referredById,
-            orderId: freeOrder.id,
-            isFree: true,
-            freeReason: "referral",
-          },
+          data: { ticketNum: nextNum, raffleId: refRaffle.id, userId: user.referredById, orderId: freeOrder.id, isFree: true, freeReason: "referral" },
         });
-        await prisma.raffle.update({
-          where: { id: refRaffle.id },
-          data: { soldTickets: { increment: 1 } },
-        });
-        // Also grant free ticket to new user
+        await prisma.raffle.update({ where: { id: refRaffle.id }, data: { soldTickets: { increment: 1 } } });
+
         const freeOrder2 = await prisma.order.create({
-          data: {
-            userId,
-            raffleId: refRaffle.id,
-            quantity: 1,
-            amount: 0,
-            status: "paid",
-          },
+          data: { userId, raffleId: refRaffle.id, quantity: 1, amount: 0, status: "paid" },
         });
         await prisma.ticket.create({
-          data: {
-            ticketNum: nextNum + 1,
-            raffleId: refRaffle.id,
-            userId,
-            orderId: freeOrder2.id,
-            isFree: true,
-            freeReason: "referral",
-          },
+          data: { ticketNum: nextNum + 1, raffleId: refRaffle.id, userId, orderId: freeOrder2.id, isFree: true, freeReason: "referral" },
         });
-        await prisma.raffle.update({
-          where: { id: refRaffle.id },
-          data: { soldTickets: { increment: 1 } },
-        });
+        await prisma.raffle.update({ where: { id: refRaffle.id }, data: { soldTickets: { increment: 1 } } });
       }
     }
   }
