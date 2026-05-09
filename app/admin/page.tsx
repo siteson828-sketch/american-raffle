@@ -34,9 +34,14 @@ export default async function AdminPage() {
         <h1 className="text-3xl font-black" style={{ color: "#3C3B6E" }}>
           🛡️ Admin Dashboard
         </h1>
-        <Link href="/admin/new-raffle" className="btn-primary">
-          + New Raffle
-        </Link>
+        <div className="flex gap-3">
+          <Link href="/change-password" className="btn-secondary text-sm">
+            🔐 Change Password
+          </Link>
+          <Link href="/admin/new-raffle" className="btn-primary">
+            + New Raffle
+          </Link>
+        </div>
       </div>
 
       {/* Stats */}
