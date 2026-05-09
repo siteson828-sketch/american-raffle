@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { auth } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import { stripe } from "@/lib/stripe";
+import { sendWinnerNotification, sendDealerWinnerNotification } from "@/lib/email";
 import { createHash, randomBytes } from "crypto";
 
 export async function POST(req: NextRequest) {
@@ -103,6 +104,37 @@ export async function POST(req: NextRequest) {
     } catch (err) {
       console.error("Stripe payout failed (drawing still recorded):", err);
     }
+  }
+
+  // Notify winner (fire-and-forget)
+  if (winningTicket.user.email) {
+    sendWinnerNotification(
+      winningTicket.user.email,
+      winningTicket.user.name ?? "Winner",
+      `${raffle.carYear} ${raffle.carMake} ${raffle.carModel}`,
+      winningTicket.ticketNum,
+      verificationHash,
+      raffleId
+    ).catch(console.error);
+  }
+
+  // Notify dealer if email is stored on raffle (use dealerName as fallback contact key)
+  // For now we look for an admin user to notify; dealers can be wired to their own accounts later
+  const adminUser = await prisma.user.findFirst({ where: { role: "admin" } });
+  if (adminUser?.email) {
+    const log = await prisma.drawingLog.findUnique({ where: { raffleId } });
+    sendDealerWinnerNotification(
+      adminUser.email,
+      raffle.dealerName ?? "Dealer",
+      `${raffle.carYear} ${raffle.carMake} ${raffle.carModel}`,
+      winningTicket.user.name ?? "Winner",
+      winningTicket.user.email ?? "",
+      winningTicket.ticketNum,
+      log?.payoutAmount ?? null,
+      stripeTransferId,
+      verificationHash,
+      raffleId
+    ).catch(console.error);
   }
 
   return NextResponse.json({
