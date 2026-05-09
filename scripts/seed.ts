@@ -17,11 +17,20 @@ async function main() {
   if (!existing) {
     const pw = await bcrypt.hash("admin1234", 12);
     await prisma.user.create({
-      data: { email: "admin@americanraffle.com", name: "Admin", password: pw, role: "admin" },
+      data: { email: "admin@americanraffle.com", name: "Admin", password: pw, role: "admin", mustChangePassword: true },
     });
-    console.log("Admin created: admin@americanraffle.com / admin1234");
+    console.log("Admin created: admin@americanraffle.com / admin1234 (must change password on first login)");
   } else {
-    console.log("Admin already exists");
+    // Ensure existing admin is flagged to change their default password
+    if (!existing.mustChangePassword) {
+      await prisma.user.update({
+        where: { id: existing.id },
+        data: { mustChangePassword: true },
+      });
+      console.log("Admin flagged: must change password on next login");
+    } else {
+      console.log("Admin already exists");
+    }
   }
 
   const existingRaffle = await prisma.raffle.findFirst({ where: { status: "active" } });
