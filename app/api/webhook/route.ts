@@ -47,7 +47,7 @@ export async function POST(req: NextRequest) {
 
     // Handle referral bonus — check if this is their first purchase
     const user = await prisma.user.findUnique({ where: { id: userId }, include: { orders: true } });
-    const isFirstPurchase = user?.orders.filter((o) => o.status === "paid").length === 1;
+    const isFirstPurchase = user?.orders.filter((o: (typeof user.orders)[number]) => o.status === "paid").length === 1;
 
     if (isFirstPurchase && user?.referredById) {
       // Grant free ticket to referrer

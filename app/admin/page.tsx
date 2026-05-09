@@ -26,7 +26,7 @@ export default async function AdminPage() {
     _sum: { amount: true },
   });
 
-  const activeRaffle = raffles.find((r) => r.status === "active");
+  const activeRaffle = raffles.find((r: (typeof raffles)[number]) => r.status === "active");
 
   return (
     <div className="max-w-7xl mx-auto px-4 py-10">
@@ -45,7 +45,7 @@ export default async function AdminPage() {
           { label: "Total Revenue", value: `$${(revenue._sum.amount || 0).toLocaleString()}`, color: "#16a34a" },
           { label: "Tickets Sold", value: orders, color: "#B22234" },
           { label: "Total Users", value: users, color: "#3C3B6E" },
-          { label: "Active Raffles", value: raffles.filter((r) => r.status === "active").length, color: "#7c3aed" },
+          { label: "Active Raffles", value: raffles.filter((r: (typeof raffles)[number]) => r.status === "active").length, color: "#7c3aed" },
         ].map((s) => (
           <div key={s.label} className="bg-white rounded-xl shadow-md p-5 text-center">
             <div className="text-3xl font-black" style={{ color: s.color }}>{s.value}</div>
@@ -126,7 +126,7 @@ export default async function AdminPage() {
               </tr>
             </thead>
             <tbody>
-              {raffles.map((r, i) => (
+              {raffles.map((r: (typeof raffles)[number], i: number) => (
                 <tr key={r.id} className={i % 2 === 0 ? "bg-white" : "bg-gray-50"}>
                   <td className="px-4 py-3 font-bold">{r.title}</td>
                   <td className="px-4 py-3">{r.carYear} {r.carMake} {r.carModel}</td>
@@ -171,7 +171,7 @@ export default async function AdminPage() {
               </tr>
             </thead>
             <tbody>
-              {recentOrders.map((order, i) => (
+              {recentOrders.map((order: (typeof recentOrders)[number], i: number) => (
                 <tr key={order.id} className={i % 2 === 0 ? "bg-white" : "bg-gray-50"}>
                   <td className="px-4 py-3">
                     <div className="font-bold">{order.user.name}</div>

@@ -89,7 +89,7 @@ export default async function MerchPage() {
   const dbProducts = await getProducts();
   const products = dbProducts.length > 0 ? dbProducts : SEED_PRODUCTS;
 
-  const categories = ["all", ...Array.from(new Set(products.map((p) => p.category)))];
+  const categories = ["all", ...Array.from(new Set(products.map((p: (typeof products)[number]) => p.category)))];
 
   return (
     <div>
@@ -113,7 +113,7 @@ export default async function MerchPage() {
         <div className="stars-divider">★ ★ ★</div>
 
         <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">
-          {products.map((product) => {
+          {products.map((product: (typeof products)[number]) => {
             const freeTickets = Math.floor(product.price / 25);
             return (
               <div key={product.id} className="bg-white rounded-2xl shadow-md overflow-hidden hover:shadow-xl transition-shadow">
