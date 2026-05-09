@@ -65,24 +65,64 @@ export async function POST(req: NextRequest) {
     const isFirstPurchase = user?.orders.filter((o: (typeof user.orders)[number]) => o.status === "paid").length === 1;
 
     if (isFirstPurchase && user?.referredById) {
-      const refRaffle = await prisma.raffle.findFirst({ where: { status: "active" } });
+      const refRaffle = await prisma.raffle.findFirst({
+        where: { status: "active" },
+        include: { referralConfig: true },
+      });
       if (refRaffle) {
-        const nextNum = refRaffle.soldTickets + qty + 1;
-        const freeOrder = await prisma.order.create({
-          data: { userId: user.referredById, raffleId: refRaffle.id, quantity: 1, amount: 0, status: "paid" },
-        });
-        await prisma.ticket.create({
-          data: { ticketNum: nextNum, raffleId: refRaffle.id, userId: user.referredById, orderId: freeOrder.id, isFree: true, freeReason: "referral" },
-        });
-        await prisma.raffle.update({ where: { id: refRaffle.id }, data: { soldTickets: { increment: 1 } } });
+        const cfg = refRaffle.referralConfig;
+        // Skip if referral system disabled for this raffle
+        if (cfg && !cfg.enabled) {
+          // do nothing
+        } else {
+          const bonus = cfg?.bonusTicketsPerRef ?? 1;
+          const maxBonus = cfg?.maxBonusPerUser ?? 0;
 
-        const freeOrder2 = await prisma.order.create({
-          data: { userId, raffleId: refRaffle.id, quantity: 1, amount: 0, status: "paid" },
-        });
-        await prisma.ticket.create({
-          data: { ticketNum: nextNum + 1, raffleId: refRaffle.id, userId, orderId: freeOrder2.id, isFree: true, freeReason: "referral" },
-        });
-        await prisma.raffle.update({ where: { id: refRaffle.id }, data: { soldTickets: { increment: 1 } } });
+          // Check referrer's current bonus ticket count for this raffle (enforce max)
+          const referrerBonusCount = maxBonus > 0
+            ? await prisma.ticket.count({
+                where: { raffleId: refRaffle.id, userId: user.referredById, isFree: true, freeReason: "referral" },
+              })
+            : 0;
+
+          const referrerCanReceive = maxBonus === 0 || referrerBonusCount + bonus <= maxBonus;
+
+          // Grant bonus tickets to referrer
+          if (referrerCanReceive && bonus > 0) {
+            const refStart = refRaffle.soldTickets + qty + 1;
+            for (let b = 0; b < bonus; b++) {
+              const fo = await prisma.order.create({
+                data: { userId: user.referredById, raffleId: refRaffle.id, quantity: 1, amount: 0, status: "paid" },
+              });
+              await prisma.ticket.create({
+                data: { ticketNum: refStart + b, raffleId: refRaffle.id, userId: user.referredById, orderId: fo.id, isFree: true, freeReason: "referral" },
+              });
+              await prisma.raffle.update({ where: { id: refRaffle.id }, data: { soldTickets: { increment: 1 } } });
+            }
+          }
+
+          // Grant bonus tickets to new user (always 1 regardless of bonus setting)
+          const newUserStart = refRaffle.soldTickets + qty + 1;
+          const fo2 = await prisma.order.create({
+            data: { userId, raffleId: refRaffle.id, quantity: 1, amount: 0, status: "paid" },
+          });
+          await prisma.ticket.create({
+            data: { ticketNum: newUserStart, raffleId: refRaffle.id, userId, orderId: fo2.id, isFree: true, freeReason: "referral" },
+          });
+          await prisma.raffle.update({ where: { id: refRaffle.id }, data: { soldTickets: { increment: 1 } } });
+
+          // Mark the most recent unConverted share from this referrer as converted
+          const pendingShare = await prisma.referralShare.findFirst({
+            where: { userId: user.referredById, raffleId: refRaffle.id, convertedUserId: null },
+            orderBy: { createdAt: "desc" },
+          });
+          if (pendingShare) {
+            await prisma.referralShare.update({
+              where: { id: pendingShare.id },
+              data: { convertedUserId: userId },
+            });
+          }
+        }
       }
     }
   }

@@ -2,22 +2,22 @@ import { auth } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import { redirect } from "next/navigation";
 import Link from "next/link";
-import CopyReferralLink from "@/components/CopyReferralLink";
+import ShareReferralPanel from "@/components/ShareReferralPanel";
 
 export default async function AccountPage() {
   const session = await auth();
   if (!session?.user?.id) redirect("/login?redirect=/account");
 
-  const user = await prisma.user.findUnique({
-    where: { id: session.user.id },
-    include: {
-      tickets: {
-        include: { raffle: true },
-        orderBy: { createdAt: "desc" },
+  const [user, activeRaffle] = await Promise.all([
+    prisma.user.findUnique({
+      where: { id: session.user.id },
+      include: {
+        tickets: { include: { raffle: true }, orderBy: { createdAt: "desc" } },
+        referrals: true,
       },
-      referrals: true,
-    },
-  });
+    }),
+    prisma.raffle.findFirst({ where: { status: "active" } }),
+  ]);
 
   if (!user) redirect("/login");
 
@@ -26,6 +26,7 @@ export default async function AccountPage() {
   const freeTickets = user.tickets.filter((t: (typeof user.tickets)[number]) => t.isFree);
 
   const referralUrl = `${process.env.NEXTAUTH_URL}/register?ref=${user.referralCode}`;
+  const raffleName = activeRaffle ? `${activeRaffle.carYear} ${activeRaffle.carMake} ${activeRaffle.carModel}` : undefined;
 
   return (
     <div className="max-w-5xl mx-auto px-4 py-10">
@@ -64,9 +65,14 @@ export default async function AccountPage() {
       >
         <h2 className="text-xl font-black mb-2">🎁 Your Referral Link</h2>
         <p className="text-blue-100 text-sm mb-4">
-          Share this link and earn 1 free ticket for every friend who joins and buys a ticket!
+          Share your link and earn a free ticket for every friend who joins and buys! Works via SMS or copy.
         </p>
-        <CopyReferralLink referralUrl={referralUrl} />
+        <ShareReferralPanel
+          referralUrl={referralUrl}
+          raffleName={raffleName}
+          raffleId={activeRaffle?.id}
+          compact
+        />
       </div>
 
       {/* Active Tickets */}

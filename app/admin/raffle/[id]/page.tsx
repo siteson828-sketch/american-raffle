@@ -2,6 +2,7 @@ import { auth } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import { redirect } from "next/navigation";
 import EditRaffleForm from "@/components/EditRaffleForm";
+import ReferralConfigPanel from "@/components/ReferralConfigPanel";
 
 interface Props {
   params: Promise<{ id: string }>;
@@ -23,6 +24,7 @@ export default async function EditRafflePage({ params }: Props) {
         ✏️ Edit Raffle
       </h1>
       <EditRaffleForm raffle={raffle} />
+      <ReferralConfigPanel raffleId={raffle.id} />
     </div>
   );
 }

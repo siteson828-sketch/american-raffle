@@ -1,22 +1,13 @@
 "use client";
 import { useSession } from "next-auth/react";
 import Link from "next/link";
-import { useState } from "react";
+import ShareReferralPanel from "@/components/ShareReferralPanel";
 
 export default function FreeTicketsPage() {
   const { data: session } = useSession();
-  const [copied, setCopied] = useState(false);
   const referralLink = session
     ? `${typeof window !== "undefined" ? window.location.origin : "https://americanraffle.com"}/register?ref=${(session.user as { referralCode?: string })?.referralCode || ""}`
     : null;
-
-  function copyLink() {
-    if (referralLink) {
-      navigator.clipboard.writeText(referralLink);
-      setCopied(true);
-      setTimeout(() => setCopied(false), 2000);
-    }
-  }
 
   return (
     <div>
@@ -56,23 +47,10 @@ export default function FreeTicketsPage() {
               <li className="flex items-center gap-2"><span className="text-green-500">✓</span> Tickets automatically added to your account</li>
             </ul>
 
-            {session ? (
+            {session && referralLink ? (
               <div>
                 <p className="text-sm font-bold text-gray-700 mb-2">Your Referral Link:</p>
-                <div className="flex gap-2">
-                  <input
-                    readOnly
-                    value={referralLink || ""}
-                    className="flex-1 text-sm border border-gray-300 rounded-lg px-3 py-2 bg-gray-50"
-                  />
-                  <button
-                    onClick={copyLink}
-                    className="px-4 py-2 rounded-lg text-white text-sm font-bold transition-colors"
-                    style={{ background: copied ? "#16a34a" : "#B22234" }}
-                  >
-                    {copied ? "✓ Copied!" : "Copy"}
-                  </button>
-                </div>
+                <ShareReferralPanel referralUrl={referralLink} />
               </div>
             ) : (
               <Link href="/register" className="btn-primary block text-center">

@@ -26,6 +26,7 @@ model User {
   orders             Order[]
   accounts           Account[]
   sessions           Session[]
+  referralShares     ReferralShare[]
 }
 
 model Account {
@@ -63,7 +64,7 @@ model VerificationToken {
 }
 
 model Raffle {
-  id                    String      @id @default(cuid())
+  id                    String           @id @default(cuid())
   title                 String
   description           String
   carMake               String
@@ -73,22 +74,46 @@ model Raffle {
   carMsrp               Float
   photos                String
   totalTickets          Int
-  soldTickets           Int         @default(0)
-  ticketPrice           Float       @default(10.0)
-  taxCovered            Boolean     @default(true)
+  soldTickets           Int              @default(0)
+  ticketPrice           Float            @default(10.0)
+  taxCovered            Boolean          @default(true)
   dealerName            String?
   dealerCity            String?
   dealerState           String?
   dealerStripeAccountId String?
-  status                String      @default("active")
+  status                String           @default("active")
   drawDate              DateTime?
   winnerId              String?
-  createdAt             DateTime    @default(now())
-  updatedAt             DateTime    @updatedAt
+  createdAt             DateTime         @default(now())
+  updatedAt             DateTime         @updatedAt
 
   tickets               Ticket[]
   orders                Order[]
   drawingLog            DrawingLog?
+  referralConfig        ReferralConfig?
+  referralShares        ReferralShare[]
+}
+
+model ReferralConfig {
+  id                 String  @id @default(cuid())
+  raffleId           String  @unique
+  raffle             Raffle  @relation(fields: [raffleId], references: [id])
+  enabled            Boolean @default(true)
+  bonusTicketsPerRef Int     @default(1)
+  maxBonusPerUser    Int     @default(0)
+  leaderboardEnabled Boolean @default(true)
+  topReferrerBonus   Int     @default(0)
+}
+
+model ReferralShare {
+  id              String   @id @default(cuid())
+  userId          String
+  user            User     @relation(fields: [userId], references: [id])
+  raffleId        String
+  raffle          Raffle   @relation(fields: [raffleId], references: [id])
+  method          String
+  convertedUserId String?
+  createdAt       DateTime @default(now())
 }
 
 model DrawingLog {

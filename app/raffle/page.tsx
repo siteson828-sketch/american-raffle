@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { prisma } from "@/lib/prisma";
 import TicketBuySection from "@/components/TicketBuySection";
+import ReferralLeaderboard from "@/components/ReferralLeaderboard";
 
 async function getRaffle() {
   return await prisma.raffle.findFirst({
@@ -135,6 +136,9 @@ export default async function RafflePage() {
 
           {/* Buy section */}
           <TicketBuySection raffleId={raffle.id} ticketsLeft={ticketsLeft} ticketPrice={raffle.ticketPrice} />
+
+          {/* Referral leaderboard */}
+          <ReferralLeaderboard raffleId={raffle.id} />
         </div>
       </div>
     </div>
