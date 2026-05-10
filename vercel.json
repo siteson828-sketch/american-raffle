@@ -1,5 +1,5 @@
 {
-  "buildCommand": "next build --webpack",
+  "buildCommand": "next build",
   "framework": "nextjs",
   "crons": [
     { "path": "/api/cron/trial-warnings", "schedule": "0 9 * * *" },
