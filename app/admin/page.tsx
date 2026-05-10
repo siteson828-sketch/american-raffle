@@ -5,33 +5,70 @@ import Link from "next/link";
 import AdminRaffleActions from "@/components/AdminRaffleActions";
 import AdminSmsDashboard from "@/components/AdminSmsDashboard";
 
-export default async function AdminPage() {
+const PAGE_SIZE = 15;
+
+interface Props {
+  searchParams: Promise<{ ordersPage?: string; rafflesPage?: string; logsPage?: string }>;
+}
+
+export default async function AdminPage({ searchParams }: Props) {
   const session = await auth();
   if (!session?.user?.id) redirect("/login");
   if ((session.user as { role?: string }).role !== "admin") redirect("/");
 
-  const [raffles, users, orders, recentOrders, drawingLogs] = await Promise.all([
-    prisma.raffle.findMany({ orderBy: { createdAt: "desc" } }),
-    prisma.user.count(),
-    prisma.order.count({ where: { status: "paid" } }),
-    prisma.order.findMany({
-      where: { status: "paid" },
-      include: { user: true, raffle: true },
-      orderBy: { createdAt: "desc" },
-      take: 10,
-    }),
-    prisma.drawingLog.findMany({
-      include: { raffle: true },
-      orderBy: { drawnAt: "desc" },
-    }),
-  ]);
+  const { ordersPage, rafflesPage, logsPage } = await searchParams;
+  const oPage = Math.max(1, parseInt(ordersPage ?? "1"));
+  const rPage = Math.max(1, parseInt(rafflesPage ?? "1"));
+  const lPage = Math.max(1, parseInt(logsPage ?? "1"));
+
+  const [raffles, raffleCount, users, orders, recentOrders, recentOrdersCount, drawingLogs, drawingLogsCount] =
+    await Promise.all([
+      prisma.raffle.findMany({
+        orderBy: { createdAt: "desc" },
+        skip: (rPage - 1) * PAGE_SIZE,
+        take: PAGE_SIZE,
+      }),
+      prisma.raffle.count(),
+      prisma.user.count(),
+      prisma.order.count({ where: { status: "paid" } }),
+      prisma.order.findMany({
+        where: { status: "paid" },
+        include: { user: true, raffle: true },
+        orderBy: { createdAt: "desc" },
+        skip: (oPage - 1) * PAGE_SIZE,
+        take: PAGE_SIZE,
+      }),
+      prisma.order.count({ where: { status: "paid" } }),
+      prisma.drawingLog.findMany({
+        include: { raffle: true },
+        orderBy: { drawnAt: "desc" },
+        skip: (lPage - 1) * PAGE_SIZE,
+        take: PAGE_SIZE,
+      }),
+      prisma.drawingLog.count(),
+    ]);
 
   const revenue = await prisma.order.aggregate({
     where: { status: "paid" },
     _sum: { amount: true },
   });
 
-  const activeRaffle = raffles.find((r: (typeof raffles)[number]) => r.status === "active");
+  const activeRaffle = raffles.find((r: (typeof raffles)[number]) => r.status === "active")
+    ?? await prisma.raffle.findFirst({ where: { status: "active" } });
+
+  const rPages = Math.max(1, Math.ceil(raffleCount / PAGE_SIZE));
+  const oPages = Math.max(1, Math.ceil(recentOrdersCount / PAGE_SIZE));
+  const lPages = Math.max(1, Math.ceil(drawingLogsCount / PAGE_SIZE));
+
+  function pageUrl(param: string, page: number) {
+    const p = new URLSearchParams({
+      ordersPage: String(oPage),
+      rafflesPage: String(rPage),
+      logsPage: String(lPage),
+      [param]: String(page),
+    });
+    return `/admin?${p.toString()}`;
+  }
 
   return (
     <div className="max-w-7xl mx-auto px-4 py-10">
@@ -122,7 +159,12 @@ export default async function AdminPage() {
 
       {/* All Raffles */}
       <div className="bg-white rounded-2xl shadow-md p-6 mb-10">
-        <h2 className="text-xl font-black mb-4" style={{ color: "#3C3B6E" }}>All Raffles</h2>
+        <div className="flex items-center justify-between mb-4">
+          <h2 className="text-xl font-black" style={{ color: "#3C3B6E" }}>
+            All Raffles
+          </h2>
+          <span className="text-sm text-gray-500">{raffleCount} total</span>
+        </div>
         <div className="overflow-x-auto">
           <table className="w-full text-sm">
             <thead className="bg-gray-50">
@@ -164,11 +206,15 @@ export default async function AdminPage() {
             </tbody>
           </table>
         </div>
+        <Pagination current={rPage} total={rPages} param="rafflesPage" pageUrl={pageUrl} />
       </div>
 
       {/* Recent Orders */}
       <div className="bg-white rounded-2xl shadow-md p-6">
-        <h2 className="text-xl font-black mb-4" style={{ color: "#3C3B6E" }}>Recent Ticket Sales</h2>
+        <div className="flex items-center justify-between mb-4">
+          <h2 className="text-xl font-black" style={{ color: "#3C3B6E" }}>Recent Ticket Sales</h2>
+          <span className="text-sm text-gray-500">{recentOrdersCount} total</span>
+        </div>
         <div className="overflow-x-auto">
           <table className="w-full text-sm">
             <thead className="bg-gray-50">
@@ -201,6 +247,7 @@ export default async function AdminPage() {
             </tbody>
           </table>
         </div>
+        <Pagination current={oPage} total={oPages} param="ordersPage" pageUrl={pageUrl} />
       </div>
 
       {/* SMS Dashboard */}
@@ -208,54 +255,99 @@ export default async function AdminPage() {
 
       {/* Drawing History */}
       <div className="bg-white rounded-2xl shadow-md p-6 mt-10">
-        <h2 className="text-xl font-black mb-4" style={{ color: "#3C3B6E" }}>🎲 Drawing Audit Log</h2>
-        {drawingLogs.length === 0 ? (
+        <div className="flex items-center justify-between mb-4">
+          <h2 className="text-xl font-black" style={{ color: "#3C3B6E" }}>🎲 Drawing Audit Log</h2>
+          <span className="text-sm text-gray-500">{drawingLogsCount} total</span>
+        </div>
+        {drawingLogsCount === 0 ? (
           <p className="text-gray-400 text-sm py-4 text-center">No drawings conducted yet.</p>
         ) : (
-          <div className="overflow-x-auto">
-            <table className="w-full text-sm">
-              <thead className="bg-gray-50">
-                <tr>
-                  <th className="text-left px-4 py-3">Raffle</th>
-                  <th className="text-left px-4 py-3">Drawn At</th>
-                  <th className="text-left px-4 py-3">Winner Ticket</th>
-                  <th className="text-left px-4 py-3">Entries</th>
-                  <th className="text-left px-4 py-3">Payout</th>
-                  <th className="text-left px-4 py-3">Verify</th>
-                </tr>
-              </thead>
-              <tbody>
-                {drawingLogs.map((log: (typeof drawingLogs)[number], i: number) => (
-                  <tr key={log.id} className={i % 2 === 0 ? "bg-white" : "bg-gray-50"}>
-                    <td className="px-4 py-3 font-bold">{log.raffle.title}</td>
-                    <td className="px-4 py-3 text-gray-500">{new Date(log.drawnAt).toLocaleString()}</td>
-                    <td className="px-4 py-3 font-mono font-bold" style={{ color: "#B22234" }}>
-                      #{log.winnerTicketNum.toString().padStart(6, "0")}
-                    </td>
-                    <td className="px-4 py-3">{log.totalEntries.toLocaleString()}</td>
-                    <td className="px-4 py-3">
-                      {log.payoutTriggered ? (
-                        <span className="text-green-700 font-bold">
-                          ${log.payoutAmount?.toLocaleString("en-US", { minimumFractionDigits: 2 })}
-                        </span>
-                      ) : (
-                        <span className="text-gray-400 text-xs">—</span>
-                      )}
-                    </td>
-                    <td className="px-4 py-3">
-                      <Link
-                        href={`/verify/${log.raffleId}`}
-                        className="text-blue-600 hover:underline text-xs font-mono"
-                        target="_blank"
-                      >
-                        {log.verificationHash.slice(0, 12)}…
-                      </Link>
-                    </td>
+          <>
+            <div className="overflow-x-auto">
+              <table className="w-full text-sm">
+                <thead className="bg-gray-50">
+                  <tr>
+                    <th className="text-left px-4 py-3">Raffle</th>
+                    <th className="text-left px-4 py-3">Drawn At</th>
+                    <th className="text-left px-4 py-3">Winner Ticket</th>
+                    <th className="text-left px-4 py-3">Entries</th>
+                    <th className="text-left px-4 py-3">Payout</th>
+                    <th className="text-left px-4 py-3">Verify</th>
                   </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
+                </thead>
+                <tbody>
+                  {drawingLogs.map((log: (typeof drawingLogs)[number], i: number) => (
+                    <tr key={log.id} className={i % 2 === 0 ? "bg-white" : "bg-gray-50"}>
+                      <td className="px-4 py-3 font-bold">{log.raffle.title}</td>
+                      <td className="px-4 py-3 text-gray-500">{new Date(log.drawnAt).toLocaleString()}</td>
+                      <td className="px-4 py-3 font-mono font-bold" style={{ color: "#B22234" }}>
+                        #{log.winnerTicketNum.toString().padStart(6, "0")}
+                      </td>
+                      <td className="px-4 py-3">{log.totalEntries.toLocaleString()}</td>
+                      <td className="px-4 py-3">
+                        {log.payoutTriggered ? (
+                          <span className="text-green-700 font-bold">
+                            ${log.payoutAmount?.toLocaleString("en-US", { minimumFractionDigits: 2 })}
+                          </span>
+                        ) : (
+                          <span className="text-gray-400 text-xs">—</span>
+                        )}
+                      </td>
+                      <td className="px-4 py-3">
+                        <Link
+                          href={`/verify/${log.raffleId}`}
+                          className="text-blue-600 hover:underline text-xs font-mono"
+                          target="_blank"
+                        >
+                          {log.verificationHash.slice(0, 12)}…
+                        </Link>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+            <Pagination current={lPage} total={lPages} param="logsPage" pageUrl={pageUrl} />
+          </>
+        )}
+      </div>
+    </div>
+  );
+}
+
+function Pagination({
+  current,
+  total,
+  param,
+  pageUrl,
+}: {
+  current: number;
+  total: number;
+  param: string;
+  pageUrl: (param: string, page: number) => string;
+}) {
+  if (total <= 1) return null;
+  return (
+    <div className="flex items-center justify-between mt-4 pt-4 border-t border-gray-100 text-sm">
+      <span className="text-gray-500">
+        Page {current} of {total}
+      </span>
+      <div className="flex gap-2">
+        {current > 1 && (
+          <Link
+            href={pageUrl(param, current - 1)}
+            className="px-3 py-1 rounded border border-gray-300 text-gray-700 hover:bg-gray-50 font-semibold"
+          >
+            ← Prev
+          </Link>
+        )}
+        {current < total && (
+          <Link
+            href={pageUrl(param, current + 1)}
+            className="px-3 py-1 rounded border border-gray-300 text-gray-700 hover:bg-gray-50 font-semibold"
+          >
+            Next →
+          </Link>
         )}
       </div>
     </div>
