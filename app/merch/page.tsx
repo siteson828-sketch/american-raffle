@@ -1,5 +1,5 @@
 import { prisma } from "@/lib/prisma";
-import AddToCartButton from "@/components/AddToCartButton";
+import MerchGrid from "@/components/MerchGrid";
 
 async function getProducts() {
   try {
@@ -79,17 +79,9 @@ const SEED_PRODUCTS = [
   },
 ];
 
-const CATEGORY_EMOJIS: Record<string, string> = {
-  apparel: "👕",
-  accessories: "🎽",
-  home: "🏡",
-};
-
 export default async function MerchPage() {
   const dbProducts = await getProducts();
   const products = dbProducts.length > 0 ? dbProducts : SEED_PRODUCTS;
-
-  const categories = ["all", ...Array.from(new Set(products.map((p: (typeof products)[number]) => p.category)))];
 
   return (
     <div>
@@ -112,40 +104,14 @@ export default async function MerchPage() {
         <h2 className="section-title">Shop All Products</h2>
         <div className="stars-divider">★ ★ ★</div>
 
-        <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">
-          {products.map((product: (typeof products)[number]) => {
-            const freeTickets = Math.floor(product.price / 25);
-            return (
-              <div key={product.id} className="bg-white rounded-2xl shadow-md overflow-hidden hover:shadow-xl transition-shadow">
-                <div
-                  className="h-48 flex items-center justify-center text-6xl"
-                  style={{ background: "#f0f4ff" }}
-                >
-                  {product.image ? (
-                    <img src={product.image} alt={product.name} className="w-full h-full object-cover" />
-                  ) : (
-                    <span>{CATEGORY_EMOJIS[product.category] || "📦"}</span>
-                  )}
-                </div>
-                <div className="p-5">
-                  {freeTickets > 0 && (
-                    <div className="inline-block bg-green-100 text-green-700 text-xs font-bold px-2 py-0.5 rounded-full mb-2">
-                      🎟️ +{freeTickets} Free Ticket{freeTickets > 1 ? "s" : ""}
-                    </div>
-                  )}
-                  <h3 className="font-bold text-gray-900 mb-1">{product.name}</h3>
-                  <p className="text-gray-500 text-xs mb-3 line-clamp-2">{product.description}</p>
-                  <div className="flex items-center justify-between">
-                    <span className="text-xl font-black" style={{ color: "#B22234" }}>
-                      ${product.price.toFixed(2)}
-                    </span>
-                    <AddToCartButton product={{ id: product.id, name: product.name, price: product.price }} />
-                  </div>
-                </div>
-              </div>
-            );
-          })}
-        </div>
+        <MerchGrid products={products.map((p) => ({
+          id: p.id,
+          name: p.name,
+          description: p.description,
+          price: p.price,
+          image: p.image ?? "",
+          category: p.category,
+        }))} />
 
         {/* Notice */}
         <div className="mt-12 bg-blue-50 border border-blue-200 rounded-2xl p-6 text-center">
