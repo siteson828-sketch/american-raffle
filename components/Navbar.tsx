@@ -25,6 +25,7 @@ export default function Navbar() {
             <Link href="/how-it-works" className="hover:text-red-300 transition-colors">How It Works</Link>
             <Link href="/free-tickets" className="hover:text-red-300 transition-colors">Free Tickets</Link>
             <Link href="/merch" className="hover:text-red-300 transition-colors">Merch Store</Link>
+            <Link href="/past-raffles" className="hover:text-red-300 transition-colors">Winners</Link>
             <Link href="/about" className="hover:text-red-300 transition-colors">About</Link>
             {isAdmin && (
               <Link href="/admin" className="hover:text-yellow-300 transition-colors">Admin</Link>
@@ -72,6 +73,7 @@ export default function Navbar() {
             <Link href="/how-it-works" onClick={() => setMenuOpen(false)} className="hover:text-red-300">How It Works</Link>
             <Link href="/free-tickets" onClick={() => setMenuOpen(false)} className="hover:text-red-300">Free Tickets</Link>
             <Link href="/merch" onClick={() => setMenuOpen(false)} className="hover:text-red-300">Merch Store</Link>
+            <Link href="/past-raffles" onClick={() => setMenuOpen(false)} className="hover:text-red-300">Winners</Link>
             <Link href="/about" onClick={() => setMenuOpen(false)} className="hover:text-red-300">About</Link>
             {isAdmin && <Link href="/admin" onClick={() => setMenuOpen(false)} className="hover:text-yellow-300">Admin</Link>}
             {session ? (
