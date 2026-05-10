@@ -2,6 +2,7 @@
 import { useSession } from "next-auth/react";
 import { useRouter } from "next/navigation";
 import { useState, useEffect } from "react";
+import PhotoUploader from "./PhotoUploader";
 
 export default function NewRafflePage() {
   const { data: session, status } = useSession();
@@ -14,7 +15,7 @@ export default function NewRafflePage() {
     carYear: new Date().getFullYear(),
     carColor: "",
     carMsrp: 40000,
-    photos: "",
+    photos: [] as string[],
     totalTickets: 10000,
     ticketPrice: 10,
     taxCovered: true,
@@ -32,7 +33,8 @@ export default function NewRafflePage() {
     }
   }, [session, status, router]);
 
-  function update(field: string, value: string | number | boolean) {
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  function update(field: string, value: any) {
     setForm((f) => ({ ...f, [field]: value }));
   }
 
@@ -40,9 +42,7 @@ export default function NewRafflePage() {
     e.preventDefault();
     setSaving(true);
     setError("");
-    const photos = form.photos
-      ? JSON.stringify(form.photos.split("\n").map((u) => u.trim()).filter(Boolean))
-      : "[]";
+    const photos = JSON.stringify(form.photos);
     const res = await fetch("/api/admin/raffle", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
@@ -206,15 +206,11 @@ export default function NewRafflePage() {
 
         {/* Photos */}
         <div>
-          <h2 className="font-black text-lg mb-4" style={{ color: "#3C3B6E" }}>Photo URLs</h2>
-          <textarea
-            rows={4}
-            value={form.photos}
-            onChange={(e) => update("photos", e.target.value)}
-            placeholder={"https://example.com/car1.jpg\nhttps://example.com/car2.jpg"}
-            className="w-full border border-gray-300 rounded-lg px-4 py-2 font-mono text-sm focus:outline-none focus:border-blue-400"
+          <h2 className="font-black text-lg mb-4" style={{ color: "#3C3B6E" }}>Vehicle Photos</h2>
+          <PhotoUploader
+            urls={form.photos}
+            onChange={(urls) => update("photos", urls)}
           />
-          <p className="text-xs text-gray-400 mt-1">One URL per line</p>
         </div>
 
         <button

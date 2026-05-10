@@ -1,6 +1,7 @@
 "use client";
 import { useRouter } from "next/navigation";
 import { useState, useEffect } from "react";
+import PhotoUploader from "./PhotoUploader";
 
 interface Raffle {
   id: string;
@@ -27,7 +28,7 @@ export default function EditRaffleForm({ raffle }: { raffle: Raffle }) {
   let photoArr: string[] = [];
   try { photoArr = JSON.parse(raffle.photos); } catch {}
 
-  const [form, setForm] = useState({ ...raffle, photosText: photoArr.join("\n") });
+  const [form, setForm] = useState({ ...raffle, photosUrls: photoArr });
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState("");
   const [success, setSuccess] = useState("");
@@ -41,7 +42,8 @@ export default function EditRaffleForm({ raffle }: { raffle: Raffle }) {
       .catch(() => {});
   }, [raffle.id]);
 
-  function update(field: string, value: string | number | boolean) {
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  function update(field: string, value: any) {
     setForm((f) => ({ ...f, [field]: value }));
   }
 
@@ -49,9 +51,7 @@ export default function EditRaffleForm({ raffle }: { raffle: Raffle }) {
     e.preventDefault();
     setSaving(true);
     setError("");
-    const photos = JSON.stringify(
-      form.photosText.split("\n").map((u) => u.trim()).filter(Boolean)
-    );
+    const photos = JSON.stringify(form.photosUrls);
     const res = await fetch(`/api/admin/raffle`, {
       method: "PATCH",
       headers: { "Content-Type": "application/json" },
@@ -125,12 +125,10 @@ export default function EditRaffleForm({ raffle }: { raffle: Raffle }) {
       </div>
 
       <div>
-        <label className="block text-sm font-bold text-gray-700 mb-1">Photo URLs (one per line)</label>
-        <textarea
-          rows={4}
-          value={form.photosText}
-          onChange={(e) => update("photosText", e.target.value)}
-          className="w-full border border-gray-300 rounded-lg px-4 py-2 font-mono text-sm focus:outline-none focus:border-blue-400"
+        <label className="block text-sm font-bold text-gray-700 mb-2">Vehicle Photos</label>
+        <PhotoUploader
+          urls={form.photosUrls}
+          onChange={(urls) => update("photosUrls", urls)}
         />
       </div>
 
